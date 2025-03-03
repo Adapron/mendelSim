@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mendelian Breeding Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; text-align: center; }
+      canvas { max-width: 800px; margin: 20px auto; height: 500px;}
+      button { margin: 10px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Mendelian Breeding Simulation</h1>
+    <button onclick="nextGeneration()">Next Generation</button>
+    <button onclick="cull('aa')">Cull: aa (brown)</button>
+    <button onclick="cull('Aa')">Cull: Aa (black)</button>
+    <button onclick="cull('AA')">Cull: AA (black)</button>
+    <div id = "typeRatio"></div>
+    <canvas id="genChart"></canvas>
+
+    <input type="text" id="input" value="25:50:25"/>
+    <button onclick="setPopulation()">Set Population</button>
+    
+    <script>
+        let population = { AA: 5000, Aa: 10000, aa: 5000};
+        let history = [{ ...population }];
+
+        function setPopulation() {
+            let input = document.getElementById("input").value;
+            let [AA, Aa, aa] = input.split(":").map(Number);
+            const mult = 20000 / (AA + Aa + aa);
+            population = { AA: AA * mult, Aa: Aa * mult, aa: aa * mult };
+            history.push({ ...population });
+            if(history.length > 5) history.shift();
+            updateChart();
+        }
+
+        function nextGeneration() {
+            let newPopulation = { AA: 0, Aa: 0, aa: 0 };
+            let total = 20000;
+            let matingPool = [];
+
+            for (let i = 0; i < population.AA; i++) matingPool.push("AA");
+            for (let i = 0; i < population.Aa; i++) matingPool.push("Aa");
+            for (let i = 0; i < population.aa; i++) matingPool.push("aa");
+
+            for (let i = 0; i < total; i++) {
+                let parent1 = matingPool[Math.floor(Math.random() * matingPool.length)];
+                let parent2 = matingPool[Math.floor(Math.random() * matingPool.length)];
+                let offspring = getOffspring(parent1, parent2);
+                newPopulation[offspring]++;
+            }
+
+            // Ensure the total number of individuals remains the same
+            let newTotal = newPopulation.AA + newPopulation.Aa + newPopulation.aa;
+            if (newTotal !== total) {
+                let difference = total - newTotal;
+                if (difference > 0) {
+                    // Add individuals to the most common genotype
+                    let maxGenotype = Object.keys(newPopulation).reduce((a, b) => newPopulation[a] > newPopulation[b] ? a : b);
+                    newPopulation[maxGenotype] += difference;
+                } else {
+                    // Remove individuals from the most common genotype
+                    let maxGenotype = Object.keys(newPopulation).reduce((a, b) => newPopulation[a] > newPopulation[b] ? a : b);
+                    newPopulation[maxGenotype] += difference; // difference is negative
+                }
+            }
+
+            population = newPopulation;
+            history.push({ ...population });
+            if(history.length > 5) history.shift();
+            updateChart();
+        }
+
+        function getGenotypeRatio() {
+            let total = population.AA + population.Aa + population.aa;
+            let AA = population.AA / total;
+            let Aa = population.Aa / total;
+            let aa = population.aa / total;
+            return { AA, Aa, aa };
+        }
+
+        function updateRatio() {
+            let ratio = getGenotypeRatio();
+            document.getElementById("typeRatio").innerText = `AA: ${(ratio.AA*100).toFixed(2)}% Aa: ${(ratio.Aa*100).toFixed(2)}% aa: ${(ratio.aa*100).toFixed(2)}%`;
+        }
+
+        function getOffspring(p1, p2) {
+            let firstGene = p1.split("")[Math.floor(Math.random() * 2)];
+            let secondGene = p2.split("")[Math.floor(Math.random() * 2)];
+
+            if (firstGene === "A" && secondGene === "A") return "AA";
+            if (firstGene === "A" && secondGene === "a") return "Aa";
+            if (firstGene === "a" && secondGene === "A") return "Aa";
+            if (firstGene === "a" && secondGene === "a") return "aa";
+
+            
+
+        }
+
+        function cull(genotype) {
+            population[genotype] = 0;
+            history.push({ ...population });
+            updateChart();
+        }
+
+        function updateChart() {
+            chart.data.labels = history.map((_, i) => `Gen ${i}`);
+            chart.data.datasets[0].data = history.map(h => h.AA);
+            chart.data.datasets[1].data = history.map(h => h.Aa);
+            chart.data.datasets[2].data = history.map(h => h.aa);
+            chart.update();
+            updateRatio();
+        }
+
+        let ctx = document.getElementById('genChart').getContext('2d');
+        let chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Gen 0'],
+                datasets: [
+                    { label: 'AA (black)', data: [50], borderColor: 'black', fill: false },
+                    { label: 'Aa (black)', data: [100], borderColor: 'gray', fill: false },
+                    { label: 'aa (brown)', data: [50], borderColor: 'brown', fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
+</body>
+</html>
