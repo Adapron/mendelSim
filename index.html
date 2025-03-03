@@ -30,7 +30,7 @@
         function setPopulation() {
             let input = document.getElementById("input").value;
             let [AA, Aa, aa] = input.split(":").map(Number);
-            const mult = 20000 / (AA + Aa + aa);
+            const mult = 100000 / (AA + Aa + aa);
             population = { AA: AA * mult, Aa: Aa * mult, aa: aa * mult };
             history.push({ ...population });
             if(history.length > 5) history.shift();
@@ -39,7 +39,7 @@
 
         function nextGeneration() {
             let newPopulation = { AA: 0, Aa: 0, aa: 0 };
-            let total = 20000;
+            let total = 100000;
             let matingPool = [];
 
             for (let i = 0; i < population.AA; i++) matingPool.push("AA");
